@@ -38,17 +38,26 @@ DEFAULT_RECORD_VIDEO = False
 DEFAULT_OUTPUT_FOLDER = 'results'
 DEFAULT_COLAB = False
 
-DEFAULT_OBS = ObservationType('kin') # 'kin' or 'rgb'
-DEFAULT_ACT = ActionType('one_d_rpm') # 'rpm' or 'pid' or 'vel' or 'one_d_rpm' or 'one_d_pid'
+DEFAULT_OBS = ObservationType('kin') # 'kin' | 'rgb'
+DEFAULT_ACT = ActionType('one_d_rpm') # 'rpm' | 'pid' | 'vel' | 'one_d_rpm' | 'one_d_pid'
 DEFAULT_AGENTS = 2
 DEFAULT_MA = False
 
 def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_GUI, plot=True, colab=DEFAULT_COLAB, record_video=DEFAULT_RECORD_VIDEO, local=True):
-
+    ############################################################
+    ############################################################
+    #################### 1. Training Phase #####################
+    ############################################################
+    ############################################################
+    
+    #### setting output file directory #######################
     filename = os.path.join(output_folder, 'save-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S"))
     if not os.path.exists(filename):
         os.makedirs(filename+'/')
 
+    #### For multi agent, it uses MultiHoverAviary ###########
+    #### If not, just use HoverAviary              ###########
+    # make_vec_env() : Create a wrapped, monitored VecEnv.
     if not multiagent:
         train_env = make_vec_env(HoverAviary,
                                  env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
@@ -67,25 +76,41 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
     #### Check the environment's spaces ########################
     print('[INFO] Action space:', train_env.action_space)
     print('[INFO] Observation space:', train_env.observation_space)
+    # Action space: Box(-1.0, 1.0, (1, 1), float32)
+    
 
-    #### Train the model #######################################
+    #### Train the model (PPO) ##################################
     model = PPO('MlpPolicy',
                 train_env,
                 # tensorboard_log=filename+'/tb/',
                 verbose=1)
 
     #### Target cumulative rewards (problem-dependent) ##########
+    # When the model reaches target_reward, it terminates.
+    #### Four cases :
+    #  default_act  |  signle agent  |  multi agents
+    # =================================================
+    #  one_d_rpm    |        474.15  |         949.5
+    #  else         |        467.    |         920.
+    #
     if DEFAULT_ACT == ActionType.ONE_D_RPM:
         target_reward = 474.15 if not multiagent else 949.5
     else:
         target_reward = 467. if not multiagent else 920.
+        
+    # StopTrainingOnRewardThreshold() : Stop the training when the mean episodic reward exceeds specific value
+    # (i.e., when the model is good enough).
+    # It must be used with the EvalCallback() and use the event triggered by a new best model.
     callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=target_reward,
                                                      verbose=1)
+    # EvalCallback() : Evaluate periodically the performance of an agent, using a separate test environment.
+    # It will save the best model if best_model_save_path folder is specified.
+    # It will save the evaluations results in a NumPy archive (evaluations.npz) if log_path folder is specified.
     eval_callback = EvalCallback(eval_env,
                                  callback_on_new_best=callback_on_best,
                                  verbose=1,
-                                 best_model_save_path=filename+'/',
-                                 log_path=filename+'/',
+                                 best_model_save_path=filename+'/',  # It will save the best model
+                                 log_path=filename+'/',  # It will save the evaluations results in a NumPy archive
                                  eval_freq=int(1000),
                                  deterministic=True,
                                  render=False)
@@ -104,7 +129,7 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
 
     ############################################################
     ############################################################
-    ############################################################
+    ##################### 2. Testing Phase #####################
     ############################################################
     ############################################################
 
@@ -139,6 +164,7 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
                 colab=colab
                 )
 
+    # evaluate_policy() : Runs policy for n episodes and returns average reward.
     mean_reward, std_reward = evaluate_policy(model,
                                               test_env_nogui,
                                               n_eval_episodes=10
@@ -154,7 +180,7 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
         obs, reward, terminated, truncated, info = test_env.step(action)
         obs2 = obs.squeeze()
         act2 = action.squeeze()
-        print("Obs:", obs, "\tAction", action, "\tReward:", reward, "\tTerminated:", terminated, "\tTruncated:", truncated)
+        #print("Obs:", obs, "\tAction", action, "\tReward:", reward, "\tTerminated:", terminated, "\tTruncated:", truncated)
         if DEFAULT_OBS == ObservationType.KIN:
             if not multiagent:
                 logger.log(drone=0,
@@ -178,7 +204,7 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
                         control=np.zeros(12)
                         )
         test_env.render()
-        print(terminated)
+        #print(terminated)
         sync(i, start, test_env.CTRL_TIMESTEP)
         if terminated:
             obs = test_env.reset(seed=42, options={})
