@@ -57,19 +57,26 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
         os.makedirs(filename+'/')
 
     # make_vec_env() : Create a wrapped, monitored VecEnv.
-    if not multiagent:
-        train_env = make_vec_env(DriveAviary,
-                                 env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
-                                 n_envs=1,
-                                 seed=0
-                                 )
-        eval_env = DriveAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+    train_env = make_vec_env(HoverAviary,
+                                env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
+                                n_envs=1,
+                                seed=0
+                                )
+    eval_env = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
 
     #### Check the environment's spaces ########################
     print('[INFO] Action space:', train_env.action_space)
-    print('[INFO] Observation space:', train_env.observation_space)
     # Action space: Box(-1.0, 1.0, (1, 1), float32)
-    
+    print('[INFO] Observation space:', train_env.observation_space)
+    # Observation space: Box([[-inf -inf   0. -inf -inf -inf -inf -inf -inf -inf -inf -inf  -1.  -1.
+    # -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.
+    # -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.
+    # -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.
+    # -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.
+    # -1.  -1.]], [[inf inf inf inf inf inf inf inf inf inf inf inf  1.  1.  1.  1.  1.  1.
+    # 1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.
+    # 1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.
+    # 1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1.]], (1, 72), float32)
 
     #### Train the model (PPO) ##################################
     model = PPO('MlpPolicy',
@@ -139,11 +146,11 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
     model = PPO.load(path)
 
     #### Show (and record a video of) the model's performance ##
-    test_env = DriveAviary(gui=gui,
+    test_env = HoverAviary(gui=gui,
                                obs=DEFAULT_OBS,
                                act=DEFAULT_ACT,
                                record=record_video)
-    test_env_nogui = DriveAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+    test_env_nogui = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
     logger = Logger(logging_freq_hz=int(test_env.CTRL_FREQ),
                 num_drones=DEFAULT_AGENTS if multiagent else 1,
                 output_folder=output_folder,

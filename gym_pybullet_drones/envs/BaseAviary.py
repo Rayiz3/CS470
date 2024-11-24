@@ -149,6 +149,10 @@ class BaseAviary(gym.Env):
         if self.GUI:
         #    print("|||| print out GUI ||||")
             #### With debug GUI ########################################
+            connection_info = p.getConnectionInfo()
+            if connection_info['isConnected']:
+                print("Active connection found. Disconnecting...")
+                p.disconnect()
             self.CLIENT = p.connect(p.GUI) # p.connect(p.GUI, options="--opengl2")
             for i in [p.COV_ENABLE_RGB_BUFFER_PREVIEW, p.COV_ENABLE_DEPTH_BUFFER_PREVIEW, p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW]:
                 p.configureDebugVisualizer(i, 0, physicsClientId=self.CLIENT)
