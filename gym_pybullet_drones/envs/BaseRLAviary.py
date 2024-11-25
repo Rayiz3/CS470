@@ -103,7 +103,7 @@ class BaseRLAviary(BaseAviary):
         Overrides BaseAviary's method.
 
         """
-        if self.OBS_TYPE == ObservationType.RGB:
+        if self.OBS_TYPE == ObservationType.RGB or self.OBS_TYPE == ObservationType.KIN:
             p.loadURDF("block.urdf",
                        [1, 0, .1],
                        p.getQuaternionFromEuler([0, 0, 0]),
