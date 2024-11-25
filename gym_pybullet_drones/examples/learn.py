@@ -1,6 +1,6 @@
 """Script demonstrating the use of `gym_pybullet_drones`'s Gymnasium interface.
 
-Classes HoverAviary and MultiHoverAviary are used as learning envs for the PPO algorithm.
+Class EnergyAviary are used as learning envs for the PPO algorithm.
 
 Example
 -------
@@ -28,8 +28,7 @@ from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnRewar
 from stable_baselines3.common.evaluation import evaluate_policy
 
 from gym_pybullet_drones.utils.Logger import Logger
-from gym_pybullet_drones.envs.HoverAviary import HoverAviary
-from gym_pybullet_drones.envs.MultiHoverAviary import MultiHoverAviary
+from gym_pybullet_drones.envs.EnergyAviary import EnergyAviary
 from gym_pybullet_drones.utils.utils import sync, str2bool
 from gym_pybullet_drones.utils.enums import ObservationType, ActionType
 
@@ -55,23 +54,17 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
     if not os.path.exists(filename):
         os.makedirs(filename+'/')
 
-    #### For multi agent, it uses MultiHoverAviary ###########
-    #### If not, just use HoverAviary              ###########
+    #################### Use EnergyAviary ######################
     # make_vec_env() : Create a wrapped, monitored VecEnv.
     if not multiagent:
-        train_env = make_vec_env(HoverAviary,
+        train_env = make_vec_env(EnergyAviary,
                                  env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
                                  n_envs=1,
                                  seed=0
                                  )
-        eval_env = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        eval_env = EnergyAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
     else:
-        train_env = make_vec_env(MultiHoverAviary,
-                                 env_kwargs=dict(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT),
-                                 n_envs=1,
-                                 seed=0
-                                 )
-        eval_env = MultiHoverAviary(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        raise ValueError("Multiagent not supported")
 
     #### Check the environment's spaces ########################
     print('[INFO] Action space:', train_env.action_space)
@@ -146,18 +139,14 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
 
     #### Show (and record a video of) the model's performance ##
     if not multiagent:
-        test_env = HoverAviary(gui=gui,
+        test_env = EnergyAviary(gui=gui,
                                obs=DEFAULT_OBS,
                                act=DEFAULT_ACT,
                                record=record_video)
-        test_env_nogui = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        test_env_nogui = EnergyAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
     else:
-        test_env = MultiHoverAviary(gui=gui,
-                                        num_drones=DEFAULT_AGENTS,
-                                        obs=DEFAULT_OBS,
-                                        act=DEFAULT_ACT,
-                                        record=record_video)
-        test_env_nogui = MultiHoverAviary(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        raise ValueError("Multiagent not supported")
+
     logger = Logger(logging_freq_hz=int(test_env.CTRL_FREQ),
                 num_drones=DEFAULT_AGENTS if multiagent else 1,
                 output_folder=output_folder,
