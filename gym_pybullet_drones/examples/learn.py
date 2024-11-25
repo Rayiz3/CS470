@@ -57,12 +57,12 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
         os.makedirs(filename+'/')
 
     # make_vec_env() : Create a wrapped, monitored VecEnv.
-    train_env = make_vec_env(HoverAviary,
+    train_env = make_vec_env(DriveAviary,
                                 env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
                                 n_envs=1,
                                 seed=0
                                 )
-    eval_env = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+    eval_env = DriveAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
 
     #### Check the environment's spaces ########################
     print('[INFO] Action space:', train_env.action_space)
@@ -96,7 +96,7 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
         target_reward = 474.15 if not multiagent else 949.5
     else:
         target_reward = 467. if not multiagent else 920.
-        
+    target_reward = 220.    
     # StopTrainingOnRewardThreshold() : Stop the training when the mean episodic reward exceeds specific value
     # (i.e., when the model is good enough).
     # It must be used with the EvalCallback() and use the event triggered by a new best model.
@@ -146,11 +146,11 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
     model = PPO.load(path)
 
     #### Show (and record a video of) the model's performance ##
-    test_env = HoverAviary(gui=gui,
+    test_env = DriveAviary(gui=gui,
                                obs=DEFAULT_OBS,
                                act=DEFAULT_ACT,
                                record=record_video)
-    test_env_nogui = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+    test_env_nogui = DriveAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
     logger = Logger(logging_freq_hz=int(test_env.CTRL_FREQ),
                 num_drones=DEFAULT_AGENTS if multiagent else 1,
                 output_folder=output_folder,
@@ -177,28 +177,17 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
         obs2 = obs.squeeze()
         act2 = action.squeeze()
         #print("Obs:", obs, "\tAction", action, "\tReward:", reward, "\tTerminated:", terminated, "\tTruncated:", truncated)
+        print("act2", len(act2))
         if DEFAULT_OBS == ObservationType.KIN:
-            if not multiagent:
-                logger.log(drone=0,
-                    timestamp=i/test_env.CTRL_FREQ,
-                    state=np.hstack([obs2[0:3],
-                                        np.zeros(4),
-                                        obs2[3:15],
-                                        act2
-                                        ]),
-                    control=np.zeros(12)
-                    )
-            else:
-                for d in range(DEFAULT_AGENTS):
-                    logger.log(drone=d,
-                        timestamp=i/test_env.CTRL_FREQ,
-                        state=np.hstack([obs2[d][0:3],
-                                            np.zeros(4),
-                                            obs2[d][3:15],
-                                            act2[d]
-                                            ]),
-                        control=np.zeros(12)
-                        )
+            logger.log(drone=0,
+                timestamp=i/test_env.CTRL_FREQ,
+                state=np.hstack([obs2[0:3],
+                                    np.zeros(4),
+                                    obs2[3:15],
+                                    act2
+                                    ]),
+                control=np.zeros(12)
+                )
         test_env.render()
         #print(terminated)
         sync(i, start, test_env.CTRL_TIMESTEP)
