@@ -1,4 +1,5 @@
 import numpy as np
+import pybullet as p
 
 from gym_pybullet_drones.envs.BaseRLAviary import BaseRLAviary
 from gym_pybullet_drones.utils.enums import DroneModel, Physics, ActionType, ObservationType
@@ -49,11 +50,13 @@ class DriveAviary(BaseRLAviary):
 
         """
         self.TARGET_POS = np.array([0,1,1])
-        self.INITIAL_XYZS = np.array([0,0,0])
+        self.INITIAL_XYZS = np.array([[0,0,1]])
         self.EPISODE_LEN_SEC = 8
+        self.DECAY = 0.1
+        
         super().__init__(drone_model=drone_model,
                          num_drones=1,
-                         initial_xyzs=initial_xyzs,
+                         initial_xyzs=self.INITIAL_XYZS,
                          initial_rpys=initial_rpys,
                          physics=physics,
                          pyb_freq=pyb_freq,
@@ -61,7 +64,7 @@ class DriveAviary(BaseRLAviary):
                          gui=gui,
                          record=record,
                          obs=obs,
-                         act=act
+                         act=act,
                          )
 
     ################################################################################
@@ -76,7 +79,8 @@ class DriveAviary(BaseRLAviary):
 
         """
         state = self._getDroneStateVector(0)
-        ret = max(0, 2 - np.linalg.norm(self.TARGET_POS-state[0:3])**4)
+        ret = 2 - np.linalg.norm(self.TARGET_POS-state[0:3])**4
+        ret -= self.DECAY
         return ret
 
     ################################################################################
@@ -91,7 +95,7 @@ class DriveAviary(BaseRLAviary):
 
         """
         state = self._getDroneStateVector(0)
-        if np.linalg.norm(self.TARGET_POS-state[0:3]) < .0001:
+        if np.linalg.norm(self.TARGET_POS-state[0:3]) < .001:
             return True
         else:
             return False
