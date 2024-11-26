@@ -39,7 +39,7 @@ DEFAULT_OUTPUT_FOLDER = 'results'
 DEFAULT_COLAB = False
 
 DEFAULT_OBS = ObservationType('kin') # 'kin' | 'rgb'
-DEFAULT_ACT = ActionType('one_d_rpm') # 'rpm' | 'pid' | 'vel' | 'one_d_rpm' | 'one_d_pid'
+DEFAULT_ACT = ActionType('vel') # 'rpm' | 'pid' | 'vel' | 'one_d_rpm' | 'one_d_pid'
 DEFAULT_AGENTS = 2
 DEFAULT_MA = False
 
@@ -80,10 +80,16 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
     
 
     #### Train the model (PPO) ##################################
-    model = PPO('MlpPolicy',
-                train_env,
-                # tensorboard_log=filename+'/tb/',
-                verbose=1)
+    if False:
+        current_dir = os.path.dirname(__file__)  # 현재 파일의 디렉터리
+        model_path = os.path.join(current_dir, "../results/save-11.25.2024_17.03.19/best_model.zip")  # 상대 경로로 모델 파일 위치 지정
+        model = PPO.load(model_path)
+        model.set_env(train_env)
+    else:
+        model = PPO('MlpPolicy',
+                    train_env,
+                    # tensorboard_log=filename+'/tb/',
+                    verbose=1)
 
     #### Target cumulative rewards (problem-dependent) ##########
     # When the model reaches target_reward, it terminates.
@@ -94,9 +100,9 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
     #  else         |        467.    |         920.
     #
     if DEFAULT_ACT == ActionType.ONE_D_RPM:
-        target_reward = 474.15 if not multiagent else 949.5
+        target_reward = 474000.15 if not multiagent else 949.5
     else:
-        target_reward = 467. if not multiagent else 920.
+        target_reward = 467000. if not multiagent else 920.
         
     # StopTrainingOnRewardThreshold() : Stop the training when the mean episodic reward exceeds specific value
     # (i.e., when the model is good enough).
@@ -114,7 +120,8 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
                                  eval_freq=int(1000),
                                  deterministic=True,
                                  render=False)
-    model.learn(total_timesteps=int(1e7) if local else int(1e2), # shorter training in GitHub Actions pytest
+
+    model.learn(total_timesteps=int(1000) if local else int(1e2), # shorter training in GitHub Actions pytest
                 callback=eval_callback,
                 log_interval=100)
 

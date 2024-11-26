@@ -103,6 +103,37 @@ class BaseRLAviary(BaseAviary):
         Overrides BaseAviary's method.
 
         """
+        urdf_path = os.path.join(os.path.dirname(__file__), "../assets/wall1.urdf")
+        self.obstacle_id = p.loadURDF(urdf_path,
+               #p.getQuaternionFromEuler([0, 0, 0]),  # 회전
+               useFixedBase=True,
+               physicsClientId=self.CLIENT
+               )
+
+
+        """
+        p.loadURDF("block.urdf",
+                    [1, 0, .1],
+                    p.getQuaternionFromEuler([0, 0, 0]),
+                    physicsClientId=self.CLIENT
+                    )
+        p.loadURDF("cube_small.urdf",
+                    [0, 1, .1],
+                    p.getQuaternionFromEuler([0, 0, 0]),
+                    physicsClientId=self.CLIENT
+                    )
+        p.loadURDF("duck_vhacd.urdf",
+                    [-1, 0, .1],
+                    p.getQuaternionFromEuler([0, 0, 0]),
+                    physicsClientId=self.CLIENT
+                    )
+        p.loadURDF("teddy_vhacd.urdf",
+                    [0, -1, .1],
+                    p.getQuaternionFromEuler([0, 0, 0]),
+                    physicsClientId=self.CLIENT
+                    )
+                    """
+        """
         if self.OBS_TYPE == ObservationType.RGB:
             p.loadURDF("block.urdf",
                        [1, 0, .1],
@@ -126,6 +157,7 @@ class BaseRLAviary(BaseAviary):
                        )
         else:
             pass
+            """
 
     ################################################################################
 

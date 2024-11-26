@@ -33,7 +33,7 @@ class BaseAviary(gym.Env):
                  ctrl_freq: int = 240,
                  gui=False,
                  record=False,
-                 obstacles=False,
+                 obstacles=True,
                  user_debug_gui=True,
                  vision_attributes=False,
                  output_folder='results'
@@ -501,8 +501,10 @@ class BaseAviary(gym.Env):
         #### E.g., to start a drone at [0,0,0] #####################
         # for i in range(self.NUM_DRONES):
             # p.setCollisionFilterPair(bodyUniqueIdA=self.PLANE_ID, bodyUniqueIdB=self.DRONE_IDS[i], linkIndexA=-1, linkIndexB=-1, enableCollision=0, physicsClientId=self.CLIENT)
-        if self.OBSTACLES:
-            self._addObstacles()
+        # if self.OBSTACLES:
+        #print("base here")
+        self._addObstacles()
+        #print("Called _addObstacles().")
     
     ################################################################################
 
