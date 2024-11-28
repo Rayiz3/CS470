@@ -11,20 +11,20 @@
     </inertial>
 
     <visual>
-      <origin rpy="0 0 0" xyz="1 0 0"/>
+      <origin rpy="0 0 0" xyz="0.5 0 0"/>
       <geometry>
         <!-- 얇은 보드 -->
-        <box size="0.05 4.0 4.0" />
+        <box size="0.05 0.5 2" />
       </geometry> 
       <material name="blue">
-        <color rgba="0.0 0.0 1.0 1.0"/>
+        <color rgba="0.0 0.0 0.1 0.1"/>
       </material> 
     </visual>
 
     <collision>
-      <origin rpy="0 0 0" xyz="1 0 0"/>
+      <origin rpy="0 0 0" xyz="0.5 0 0"/>
       <geometry>
-        <box size="0.05 4.0 4.0" />
+        <box size="0.05 0.5 2" />
       </geometry>
     </collision>  
 

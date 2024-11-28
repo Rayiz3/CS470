@@ -39,7 +39,7 @@ DEFAULT_OUTPUT_FOLDER = 'results'
 DEFAULT_COLAB = False
 
 DEFAULT_OBS = ObservationType('kin') # 'kin' | 'rgb'
-DEFAULT_ACT = ActionType('vel') # 'rpm' | 'pid' | 'vel' | 'one_d_rpm' | 'one_d_pid'
+DEFAULT_ACT = ActionType('pid') # 'rpm' | 'pid' | 'vel' | 'one_d_rpm' | 'one_d_pid'
 DEFAULT_AGENTS = 2
 DEFAULT_MA = False
 
@@ -51,7 +51,13 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
     ############################################################
     
     #### setting output file directory #######################
-    filename = os.path.join(output_folder, 'save-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S"))
+    use_trained_model = False
+    train = True
+    original_file = 'save-11.26.2024_22.54.07'
+    if train:
+        filename = os.path.join(output_folder, 'save-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S"))
+    else:
+        filename = os.path.join(output_folder, original_file)
     if not os.path.exists(filename):
         os.makedirs(filename+'/')
 
@@ -80,9 +86,11 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
     
 
     #### Train the model (PPO) ##################################
-    if False:
+    
+
+    if use_trained_model:
         current_dir = os.path.dirname(__file__)  # 현재 파일의 디렉터리
-        model_path = os.path.join(current_dir, "../results/save-11.25.2024_17.03.19/best_model.zip")  # 상대 경로로 모델 파일 위치 지정
+        model_path = os.path.join(current_dir, "../results/" + original_file + "/best_model.zip")  # 상대 경로로 모델 파일 위치 지정
         model = PPO.load(model_path)
         model.set_env(train_env)
     else:
@@ -121,18 +129,19 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
                                  deterministic=True,
                                  render=False)
 
-    model.learn(total_timesteps=int(1000) if local else int(1e2), # shorter training in GitHub Actions pytest
-                callback=eval_callback,
-                log_interval=100)
+    if train:
+        model.learn(total_timesteps=int(50000) if local else int(1e2), # shorter training in GitHub Actions pytest
+                    callback=eval_callback,
+                    log_interval=100)
 
-    #### Save the model ########################################
-    model.save(filename+'/final_model.zip')
-    print(filename)
+        #### Save the model ########################################
+        model.save(filename+'/final_model.zip')
+        print(filename)
 
-    #### Print training progression ############################
-    with np.load(filename+'/evaluations.npz') as data:
-        for j in range(data['timesteps'].shape[0]):
-            print(str(data['timesteps'][j])+","+str(data['results'][j][0]))
+        #### Print training progression ############################
+        with np.load(filename+'/evaluations.npz') as data:
+            for j in range(data['timesteps'].shape[0]):
+                print(str(data['timesteps'][j])+","+str(data['results'][j][0]))
 
     ############################################################
     ############################################################

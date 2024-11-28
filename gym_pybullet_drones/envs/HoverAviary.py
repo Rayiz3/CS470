@@ -49,7 +49,7 @@ class HoverAviary(BaseRLAviary):
             The type of action space (1 or 3D; RPMS, thurst and torques, or waypoint with PID control)
 
         """
-        self.TARGET_POS = np.array([1.5,1,1])
+        self.TARGET_POS = np.array([1,0.5,0.5])
         self.EPISODE_LEN_SEC = 16
         super().__init__(drone_model=drone_model,
                          num_drones=1,
@@ -77,9 +77,9 @@ class HoverAviary(BaseRLAviary):
         """
         state = self._getDroneStateVector(0)
         distance_to_target = np.linalg.norm(self.TARGET_POS - state[0:3])
-        ret = max(0, 64 - distance_to_target**4)
+        ret = 15 - (distance_to_target**2)*5
         if distance_to_target < 0.1:  # 목표에 매우 가까우면 추가 보상
-            ret += 100
+            ret += 1000
         contact_points = p.getContactPoints()
         for contact in contact_points:
             if (contact[1] == self.DRONE_IDS[0] and contact[2] == self.obstacle_id) or \
