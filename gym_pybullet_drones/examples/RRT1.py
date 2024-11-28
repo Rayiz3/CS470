@@ -73,7 +73,7 @@ def rrt_star(start, goal, max_iter=100000, step_size=0.1, neighbor_radius=0.1):
                 return path[::-1]
     return None
 """
-def rrt(start, goal, max_iter=1000000, step_size=0.5):
+def rrt(start, goal, max_iter=1000000, step_size=0.1):
     """
     RRT 알고리즘을 사용하여 시작점(start)에서 목표(goal)까지의 경로를 찾음.
 
@@ -105,7 +105,7 @@ def rrt(start, goal, max_iter=1000000, step_size=0.5):
 
         # 새 위치로의 이동이 충돌하지 않는 경우
         if not is_collision(nearest_node.position, new_position):
-            new_node = Node(new_position, nearest_node)  # 새 노드를 트리에 추가
+            new_node = Node(new_position, 0, nearest_node)  # 새 노드를 트리에 추가
             tree.append(new_node)
             
             # 새 노드가 목표에 충분히 가까운 경우
@@ -128,6 +128,7 @@ path = rrt(start, goal)  # 시작점에서 목표점까지의 경로를 탐색
 
 if path is not None:
     print("Generated Path:", path)
+    print(f"Path Length: {len(path)}")
 else:
     print("No path found.")
 
@@ -138,6 +139,6 @@ if path is not None:
 else:
     print("경로를 찾을 수 없습니다.")
 
-time.sleep(10)
+time.sleep(100)
 
 p.disconnect()  # PyBullet 시뮬레이션 종료
