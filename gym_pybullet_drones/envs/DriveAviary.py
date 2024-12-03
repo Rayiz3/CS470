@@ -1,6 +1,7 @@
 import numpy as np
 import pybullet as p
 
+from scipy.stats import multivariate_normal
 from gym_pybullet_drones.envs.BaseRLAviary import BaseRLAviary
 from gym_pybullet_drones.utils.enums import DroneModel, Physics, ActionType, ObservationType
 
@@ -49,10 +50,10 @@ class DriveAviary(BaseRLAviary):
             The type of action space (1 or 3D; RPMS, thurst and torques, or waypoint with PID control)
 
         """
-        self.TARGET_POS = np.array([0,1,1])
+        self.TARGET_POS = np.array([2,0,1])
         self.INITIAL_XYZS = np.array([[0,0,1]])
         self.EPISODE_LEN_SEC = 8
-        self.DECAY = 0.1
+        self.VEL_PREV = np.zeros(3)
         
         super().__init__(drone_model=drone_model,
                          num_drones=1,
@@ -79,8 +80,33 @@ class DriveAviary(BaseRLAviary):
 
         """
         state = self._getDroneStateVector(0)
-        ret = 2 - np.linalg.norm(self.TARGET_POS-state[0:3])**4
-        ret -= self.DECAY
+
+        # time term
+        rv = multivariate_normal(self.TARGET_POS, np.eye(3) * 0.8)
+        dist_coef = rv.pdf(state[0:3])
+        ret = dist_coef * 50
+        #print("dist : ", dist_coef)
+        
+        # efficiency term
+        gravity_acc = np.array([0, 0, -9.8])
+        acc_coef = np.linalg.norm(state[10:13] - self.VEL_PREV + gravity_acc * 0.01)
+        if state[2] < 0.5:
+            ret -= acc_coef
+        else:
+            ret -= acc_coef * 10
+        # print("accelerate : ", acc_coef)
+
+        self.VEL_PREV = state[10:13]
+
+        # landing term
+        
+        # collision term
+        contact_points = p.getContactPoints()
+        for contact in contact_points:
+            if (contact[1] == self.DRONE_IDS[0] and contact[2] == self.obstacle_id) or \
+                (contact[1] == self.obstacle_id and contact[2] == self.DRONE_IDS[0]):
+                ret -= 1000
+
         return ret
 
     ################################################################################
