@@ -56,29 +56,33 @@ def run(
     PERIOD = 10
     NUM_WP = control_freq_hz*PERIOD
     TARGET_POS = np.zeros((NUM_WP, 3))
-    t = np.linspace(0, 2*np.pi, NUM_WP)
     
-    # 지상 이동 후 상승 궤적
-    GROUND_PHASE = 0.3  # 처음 30%는 지상 이동
-    TRANSITION_PHASE = 0.2  # 20%는 상승 구간
+    # 단계별 시간 설정
+    GROUND_PHASE = 0.4  # 처음 40%는 지상 이동
+    HOVER_PHASE = 0.1   # 10%는 제자리 호버링
+    ASCEND_PHASE = 0.2  # 20%는 상승
+    
     ground_idx = int(NUM_WP * GROUND_PHASE)
-    transition_idx = int(NUM_WP * (GROUND_PHASE + TRANSITION_PHASE))
+    hover_idx = int(NUM_WP * (GROUND_PHASE + HOVER_PHASE))
+    ascend_idx = int(NUM_WP * (GROUND_PHASE + HOVER_PHASE + ASCEND_PHASE))
     
-    # X 좌표: 전체 구간에서 0에서 1로 이동
-    TARGET_POS[:, 0] = 10 * np.linspace(0, 1, NUM_WP)
+    # X 좌표: 지상 이동 구간에서만 이동
+    ground_x = np.linspace(0, 5, ground_idx)  # 5m 전진
+    TARGET_POS[:ground_idx, 0] = ground_x
+    TARGET_POS[ground_idx:, 0] = ground_x[-1]  # 마지막 위치 유지
     
     # Y 좌표: 고정
     TARGET_POS[:, 1] = INIT_XYZS[0, 1]
     
-    # Z 좌표: 단계별 높이 설정
-    TARGET_POS[:ground_idx, 2] = 0.05  # 지상 이동 (5cm 높이)
+    # Z 좌표: 단계별 설정
+    TARGET_POS[:hover_idx, 2] = 0.05  # 지상 이동 및 호버링 (5cm 높이)
     
-    # 상승 구간: 0.02m에서 1m까지 부드럽게 상승
-    transition_t = np.linspace(0, 1, transition_idx - ground_idx)
-    TARGET_POS[ground_idx:transition_idx, 2] = 0.05 + 0.95 * (1 - np.cos(transition_t * np.pi/2))
+    # 상승 구간: 사인 곡선으로 부드럽게
+    ascend_t = np.linspace(0, 1, ascend_idx - hover_idx)
+    TARGET_POS[hover_idx:ascend_idx, 2] = 0.05 + 1.95 * (1 - np.cos(ascend_t * np.pi/2))
     
-    # 공중 구간: 1m 높이 유지
-    TARGET_POS[transition_idx:, 2] = 1.0
+    # 공중 구간: 2m 높이 유지
+    TARGET_POS[ascend_idx:, 2] = 2.0
 
     wp_counters = 0
 
@@ -120,16 +124,13 @@ def run(
         wheel_action = np.zeros((1,4))
         prop_action = np.zeros((1,4))
         wheel_action[0, :] = wheel_velocities
-        
-        # 프로펠러 출력 스케일링 (예: 1.6배)
-        if i > ground_idx:
-          prop_action[0, :] = prop_rpms * 1.6
-          print(prop_action)
+        prop_action[0, :] = prop_rpms
 
         action = {
             'wheel_action': wheel_action,
             'prop_action': prop_action
         }
+        print(action)
         
         #### 시뮬레이션 스텝 ###################################
         obs, reward, terminated, truncated, info = env.step(action)

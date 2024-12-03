@@ -24,6 +24,10 @@ class WheelDSLPIDControl(DSLPIDControl):
         self.last_x_error = 0
         self.integral_x_error = 0
         
+        # 바닥 감지를 위한 임계값 추가
+        self.GROUND_THRESHOLD = 0.1  # 바닥으로부터의 높이 임계값 (미터)
+        self.Z_MOVEMENT_THRESHOLD = 0.05  # z축 이동 감지 임계값
+        
     def computeControl(self,
                       control_timestep,
                       cur_pos,
@@ -36,34 +40,38 @@ class WheelDSLPIDControl(DSLPIDControl):
                       target_rpy_rates=np.zeros(3)
                       ):
         """제어 입력 계산."""
+        # 현재 상태 분석
+        is_near_ground = cur_pos[2] < self.GROUND_THRESHOLD
+        z_movement_required = abs(target_pos[2] - cur_pos[2]) > self.Z_MOVEMENT_THRESHOLD
+
         # 바퀴 제어 계산 (x축 이동)
-        x_error = target_pos[0] - cur_pos[0]
-        self.integral_x_error += x_error * control_timestep
-        derivative_x_error = (x_error - self.last_x_error) / control_timestep
-        self.last_x_error = x_error
+        wheel_velocities = np.zeros(4)
+        if is_near_ground and not z_movement_required:
+            x_error = target_pos[0] - cur_pos[0]
+            self.integral_x_error += x_error * control_timestep
+            derivative_x_error = (x_error - self.last_x_error) / control_timestep
+            self.last_x_error = x_error
+            
+            base_velocity = self.P_COEFF_WHEEL * x_error + \
+                            self.I_COEFF_WHEEL * self.integral_x_error + \
+                            self.D_COEFF_WHEEL * derivative_x_error
+            
+            wheel_velocities = np.array([base_velocity] * 4)
         
-        base_velocity = self.P_COEFF_WHEEL * x_error + \
-                        self.I_COEFF_WHEEL * self.integral_x_error + \
-                        self.D_COEFF_WHEEL * derivative_x_error
+        # 프로펠러 제어 계산
+        prop_rpms = np.zeros(4)
+        if not is_near_ground or z_movement_required:
+            prop_rpms, _, _ = super().computeControl(
+                control_timestep=control_timestep,
+                cur_pos=cur_pos,
+                cur_quat=cur_quat,
+                cur_vel=cur_vel,
+                cur_ang_vel=cur_ang_vel,
+                target_pos=target_pos,
+                target_rpy=target_rpy,
+                target_vel=target_vel,
+                target_rpy_rates=target_rpy_rates
+            )
+        prop_rpms = prop_rpms * 1.6
         
-        wheel_velocities = np.array([
-            base_velocity,    # 전좌
-            base_velocity,   # 전우
-            base_velocity,    # 후좌
-            base_velocity    # 후우
-        ])
-        
-        # 프로펠러 제어 계산 (높이 제어)
-        prop_rpms, _, _ = super().computeControl(
-            control_timestep=control_timestep,
-            cur_pos=cur_pos,
-            cur_quat=cur_quat,
-            cur_vel=cur_vel,
-            cur_ang_vel=cur_ang_vel,
-            target_pos=target_pos,
-            target_rpy=target_rpy,
-            target_vel=target_vel,
-            target_rpy_rates=target_rpy_rates
-        )
-        
-        return wheel_velocities, prop_rpms 
+        return wheel_velocities, prop_rpms
