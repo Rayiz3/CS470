@@ -40,7 +40,7 @@ DEFAULT_OUTPUT_FOLDER = 'results'
 DEFAULT_COLAB = False
 
 DEFAULT_OBS = ObservationType('kin') # 'kin' | 'rgb'
-DEFAULT_ACT = ActionType('rpm') # 'rpm' | 'pid' | 'vel' | 'one_d_rpm' | 'one_d_pid'
+DEFAULT_ACT = ActionType('vel') # 'rpm' | 'pid' | 'vel' | 'one_d_rpm' | 'one_d_pid'
 DEFAULT_AGENTS = 2
 DEFAULT_MA = False
 
@@ -96,7 +96,7 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
         target_reward = 474.15 if not multiagent else 949.5
     else:
         target_reward = 467. if not multiagent else 920.
-    target_reward = 220.    
+    target_reward = 120.    
     # StopTrainingOnRewardThreshold() : Stop the training when the mean episodic reward exceeds specific value
     # (i.e., when the model is good enough).
     # It must be used with the EvalCallback() and use the event triggered by a new best model.
