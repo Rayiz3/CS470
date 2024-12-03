@@ -75,7 +75,6 @@ class WheelPropAviary(CtrlAviary):
                         wheel_id,
                         p.VELOCITY_CONTROL,
                         targetVelocity=action['wheel_action'][i, j],
-                        force=self.WHEEL_FORCE
                     )
         
         # 기존 step 실행 (프로펠러 제어)

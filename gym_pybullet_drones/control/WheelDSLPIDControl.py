@@ -16,9 +16,9 @@ class WheelDSLPIDControl(DSLPIDControl):
         super().__init__(drone_model=drone_model, g=g)
         
         # 바퀴 제어를 위한 PID 게인
-        self.P_COEFF_WHEEL = 0.5
-        self.I_COEFF_WHEEL = 0.001
-        self.D_COEFF_WHEEL = 0.1
+        self.P_COEFF_WHEEL = 50
+        self.I_COEFF_WHEEL = 0.1
+        self.D_COEFF_WHEEL = 10
         
         # x축 PID 오차값 저장
         self.last_x_error = 0
@@ -72,6 +72,36 @@ class WheelDSLPIDControl(DSLPIDControl):
                 target_vel=target_vel,
                 target_rpy_rates=target_rpy_rates
             )
-        prop_rpms = prop_rpms * 1.6
+        prop_rpms = prop_rpms
+        
+        return wheel_velocities, prop_rpms
+
+    def computeFromStates(self,
+                         control_timestep,
+                         state,
+                         target_pos,
+                         target_rpy=np.zeros(3),
+                         target_vel=np.zeros(3),
+                         target_rpy_rates=np.zeros(3)
+                         ):
+        """상태 벡터로부터 제어 입력 계산."""
+        # 상태 벡터 분해
+        pos = state[0:3]
+        quat = np.array([state[6], state[3], state[4], state[5]])
+        vel = state[10:13]
+        ang_vel = state[13:16]
+        
+        # computeControl 호출
+        wheel_velocities, prop_rpms = self.computeControl(
+            control_timestep=control_timestep,
+            cur_pos=pos,
+            cur_quat=quat,
+            cur_vel=vel,
+            cur_ang_vel=ang_vel,
+            target_pos=target_pos,
+            target_rpy=target_rpy,
+            target_vel=target_vel,
+            target_rpy_rates=target_rpy_rates
+        )
         
         return wheel_velocities, prop_rpms
