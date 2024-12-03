@@ -125,6 +125,8 @@ class BaseRLAviary(BaseAviary):
                        physicsClientId=self.CLIENT
                        )
         else:
+            urdf_path = os.path.join(os.path.dirname(__file__), "../assets/wall.urdf")
+            self.obstacle_id = p.loadURDF(urdf_path, useFixedBase=True, physicsClientId=self.CLIENT)
             pass
 
     ################################################################################
